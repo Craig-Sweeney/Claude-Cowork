@@ -8,7 +8,7 @@ Open Claude Cowork 是一个基于 Electron 框架构建的跨平台桌面应用
 - 🖥️ 原生跨平台桌面应用（macOS、Windows、Linux）
 - 🤖 AI 协作伙伴，支持代码编写、文件管理、命令执行
 - 🔐 **独立运行模式**：内置 Claude Code CLI，无需用户单独安装
-- 🔑 **安全配置管理**：应用内 API 配置界面，使用 Electron safeStorage 加密存储
+- 🔑 **安全配置管理**：应用内 API 配置界面，使用 AES-256-GCM 加密存储（基于机器 ID 派生密钥）
 - 🔁 兼容 Claude Code 配置（首次启动自动从 `~/.claude/settings.json` 迁移）
 - 📂 会话管理与历史记录持久化
 - 🎯 实时流式输出，支持工具权限控制
@@ -285,7 +285,7 @@ canUseTool: async (toolName, input) => {
 #### 4.1.6 `libs/config-store.ts` - 配置存储
 **职责：**
 - 管理应用配置的持久化存储
-- 使用 Electron `safeStorage` API 加密存储 API Key
+- 使用自定义加密方案（AES-256-GCM + MachineID）加密存储 API Key
 - 首次启动时自动从 `~/.claude/settings.json` 迁移配置
 - 提供配置的 CRUD 操作
 
@@ -294,11 +294,9 @@ canUseTool: async (toolName, input) => {
 
 **加密策略：**
 ```typescript
-// API Key 使用 safeStorage 加密后存储
-if (key === 'apiKey' && safeStorage.isEncryptionAvailable()) {
-  const encrypted = safeStorage.encryptString(value);
-  // 存储为 base64 编码
-}
+// API Key 使用基于机器唯一 ID 派生的密钥进行 AES-256-GCM 加密
+const encrypted = cryptoUtil.encryptString(value);
+// 存储格式为 iv:authTag:ciphertext
 ```
 
 **配置迁移流程：**
@@ -682,13 +680,10 @@ type ServerEvent =
 - 版本控制：确保 CLI 版本与应用兼容
 - 简化安装流程：下载即用
 
-**为什么使用 Electron safeStorage？**
-- 利用操作系统级别的加密服务
-  - macOS: Keychain
-  - Windows: DPAPI
-  - Linux: libsecret
-- API Key 在磁盘上始终加密存储
-- 只有当前用户才能解密
+**为什么使用自定义加密方案？**
+- **跨平台一致性**：解决 Electron `safeStorage` 在 Windows 下的初始化报错及 macOS 下频繁唤起系统密码弹窗的问题。
+- **机器特异性**：密钥基于硬件指纹（`node-machine-id`）派生，数据无法在不同机器间非法复制使用。
+- **零用户干预**：静默加密解密，显著提升用户体验，无需记忆和输入额外密码。
 
 **为什么首次启动自动迁移配置？**
 - 无缝过渡：已有 Claude Code 用户无需重新配置
@@ -748,6 +743,6 @@ Open Claude Cowork 通过精心设计的架构，实现了：
 ✅ **响应式的用户体验**：Zustand + React 实现高效状态管理和 UI 更新  
 ✅ **灵活的扩展性**：事件驱动架构便于添加新功能  
 ✅ **独立运行能力**：内置 Claude Code CLI，无需用户单独安装  
-✅ **安全的配置存储**：使用 Electron safeStorage 加密 API Key
+✅ **安全的配置存储**：基于机器 ID 指纹的 AES-256-GCM 加密方案
 
 整体架构遵循 Electron 最佳实践，代码结构清晰，易于维护和扩展。

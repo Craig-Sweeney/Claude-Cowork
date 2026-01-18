@@ -9,9 +9,23 @@ import { ConfigStore } from "./libs/config-store.js";
 import { setConfigStore } from "./libs/claude-settings.js";
 import { join } from "path";
 
+// Windows: 抑制 Chromium 内部 DPAPI/OsCrypt 相关的错误日志
+// 错误代码 0x80090345 是 Windows 某些环境下 DPAPI 初始化失败的已知问题
+// 这不影响实际功能，Chromium 会回退到其他加密方式
+// 我们的 API Key 加密使用自定义的 AES-256-GCM 方案（crypto-util.ts），不受影响
+if (process.platform === 'win32') {
+    // 设置日志级别为 FATAL (3)，抑制 ERROR (2) 及以下级别的日志
+    // Chromium LogSeverity: INFO=0, WARNING=1, ERROR=2, FATAL=3
+    app.commandLine.appendSwitch('log-level', '1');
+}
+
 const CONFIG_DB_PATH = join(app.getPath("userData"), "config.db");
 const configStore = new ConfigStore(CONFIG_DB_PATH);
 setConfigStore(configStore);
+
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.agent-cowork.app');
+}
 
 app.on("ready", () => {
     const mainWindow = new BrowserWindow({

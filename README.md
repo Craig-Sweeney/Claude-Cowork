@@ -39,12 +39,12 @@ If Claude Code works on your machine —
 
 ## 🚀 Quick Start
 
-Before using Agent Cowork, make sure Claude Code is installed and properly configured.
+Agent Cowork is designed to be **self-contained** - you don't need to install Claude Code separately.
 
 #### Prerequisites
 
 - [Bun](https://bun.sh/) or Node.js 18+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
+- Valid Anthropic API Key
 
 #### How to use
 ``` shell
@@ -105,22 +105,22 @@ Agent Cowork is your AI partner that can:
 
 ## 🔁 Fully Compatible with Claude Code
 
-Agent Cowork **shares configuration with Claude Code**.
+Agent Cowork **shares configuration with Claude Code** when available.
 
-It directly reuses:
+If you have Claude Code installed, it will automatically import:
 
-text
+```
 ~/.claude/settings.json
-
+```
 
 This means:
 
 * Same API keys
 * Same base URL
-* Same models
+* Same models  
 * Same behavior
 
-> Configure Claude Code once — use it everywhere.
+> **First-time users:** No worries! Agent Cowork has a built-in configuration interface. You can set up your API key directly in the app.
 
 ---
 

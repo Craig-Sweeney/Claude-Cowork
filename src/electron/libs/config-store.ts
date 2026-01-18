@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
-import { safeStorage } from 'electron';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { encryptString, decryptString, isEncryptionAvailable } from './crypto-util.js';
 
 export interface AppConfig {
   apiKey?: string;
@@ -26,7 +26,7 @@ export class ConfigStore {
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
-    this.encryptionAvailable = safeStorage.isEncryptionAvailable();
+    this.encryptionAvailable = isEncryptionAvailable();
 
     if (!this.encryptionAvailable) {
       console.warn('⚠️ Encryption not available, API keys will be stored in plaintext');
@@ -53,8 +53,7 @@ export class ConfigStore {
     for (const row of rows) {
       if (row.key === 'apiKey' && row.encrypted && this.encryptionAvailable) {
         try {
-          const buffer = Buffer.from(row.value, 'base64');
-          config.apiKey = safeStorage.decryptString(buffer);
+          config.apiKey = decryptString(row.value);
         } catch (error) {
           console.error('Failed to decrypt API key:', error);
         }
@@ -78,8 +77,8 @@ export class ConfigStore {
 
       if (key === 'apiKey') {
         if (this.encryptionAvailable) {
-          const encrypted = safeStorage.encryptString(value as string);
-          stmt.run('apiKey', encrypted.toString('base64'), 1);
+          const encrypted = encryptString(value as string);
+          stmt.run('apiKey', encrypted, 1);
         } else {
           stmt.run('apiKey', value, 0);
         }
